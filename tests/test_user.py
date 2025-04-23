@@ -40,6 +40,7 @@ def test_create_user_with_valid_email():
     assert response.headers["Content-Type"] == "application/json"
     assert response.json()['name'] == new_user['name']
     assert response.json()['email'] == new_user['email']
+    assert 'id' in response.json()  # Проверка, что возвращается id
 
 def test_create_user_with_invalid_email():
     '''Создание пользователя с почтой, которую использует другой пользователь'''
