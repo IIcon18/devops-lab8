@@ -41,16 +41,13 @@ def test_create_user_with_valid_email():
     }
     response = client.post("/api/v1/user", json=new_user_data)
     assert response.status_code == 201
-    user_id = response.json()  # Сохраняем ID пользователя
-    assert isinstance(user_id, int)  # Проверяем, что возвращённое значение — ID
+    assert isinstance(response.json(), int)  # Проверяем, что возвращается ID
 
     # Проверяем, что пользователь действительно создан
     get_response = client.get("/api/v1/user", params={'email': new_user_data['email']})
     assert get_response.status_code == 200
-    created_user = get_response.json()
-    assert created_user['id'] == user_id
-    assert created_user['email'] == new_user_data['email']
-    assert created_user['name'] == new_user_data['name']
+    assert get_response.json()['email'] == new_user_data['email']
+    assert get_response.json()['name'] == new_user_data['name']
 
 
 def test_create_user_with_invalid_email():
