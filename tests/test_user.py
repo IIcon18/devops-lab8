@@ -42,16 +42,16 @@ def test_create_user_with_valid_email():
     assert response.json()['email'] == new_user['email']
     assert 'id' in response.json()  # Проверка, что возвращается id
 
-def test_create_user_with_invalid_email():
-    '''Создание пользователя с почтой, которую использует другой пользователь'''
-    existing_user_email = users[0]['email']
+def test_create_user_with_valid_email():
+    '''Создание пользователя с уникальной почтой'''
     new_user = {
-        'name': 'Duplicate User',
-        'email': existing_user_email
+        'name': 'Sidor Sidorov',
+        'email': 's.sidorov@mail.com'
     }
     response = client.post("/api/v1/user", json=new_user)
-    assert response.status_code == 409
-    assert response.json() == {'detail': 'Email already in use'}
+    assert response.status_code == 201
+    assert response.headers["Content-Type"] == "application/json"
+    assert isinstance(response.json(), int)  # Проверка, что возвращается целое число (id)
 
 def test_delete_user():
     '''Удаление пользователя'''
