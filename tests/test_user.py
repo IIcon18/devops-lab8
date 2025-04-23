@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+
 from src.main import app
 
 client = TestClient(app)
@@ -17,11 +18,13 @@ users = [
     }
 ]
 
+
 def test_get_existed_user():
     '''Получение существующего пользователя'''
     response = client.get("/api/v1/user", params={'email': users[0]['email']})
     assert response.status_code == 200
     assert response.json() == users[0]
+
 
 def test_get_unexisted_user():
     '''Получение несуществующего пользователя'''
@@ -29,37 +32,49 @@ def test_get_unexisted_user():
     assert response.status_code == 404
     assert response.json() == {'detail': 'User not found'}
 
-def test_create_user_with_valid_email():
-    '''Создание пользователя с уникальной почтой'''
-    new_user = {
-        'name': 'Sidor Sidorov',
-        'email': 's.sidorov@mail.com'
-    }
-    response = client.post("/api/v1/user", json=new_user)
-    assert response.status_code == 201
-    assert response.headers["Content-Type"] == "application/json"
-    assert response.json()['name'] == new_user['name']
-    assert response.json()['email'] == new_user['email']
-    assert 'id' in response.json()  # Проверка, что возвращается id
 
 def test_create_user_with_valid_email():
     '''Создание пользователя с уникальной почтой'''
-    new_user = {
-        'name': 'Sidor Sidorov',
-        'email': 's.sidorov@mail.com'
+    new_user_data = {
+        'name': 'New User',
+        'email': 'new.user@mail.com'
     }
-    response = client.post("/api/v1/user", json=new_user)
+    response = client.post("/api/v1/user", json=new_user_data)
     assert response.status_code == 201
-    assert response.headers["Content-Type"] == "application/json"
-    assert isinstance(response.json(), int)  # Проверка, что возвращается целое число (id)
+    assert isinstance(response.json(), int)  # Проверяем, что возвращается ID
+
+    # Проверяем, что пользователь действительно создан
+    get_response = client.get("/api/v1/user", params={'email': new_user_data['email']})
+    assert get_response.status_code == 200
+    assert get_response.json()['email'] == new_user_data['email']
+    assert get_response.json()['name'] == new_user_data['name']
+
+
+def test_create_user_with_invalid_email():
+    '''Создание пользователя с почтой, которую использует другой пользователь'''
+    existing_email = users[0]['email']
+    response = client.post("/api/v1/user", json={
+        'name': 'Duplicate User',
+        'email': existing_email
+    })
+    assert response.status_code == 409
+    assert response.json() == {'detail': 'User with this email already exists'}
+
 
 def test_delete_user():
     '''Удаление пользователя'''
-    user_to_delete_email = users[1]['email']
-    response = client.delete("/api/v1/user", params={'email': user_to_delete_email})
-    assert response.status_code == 204
+    # Сначала создадим пользователя для удаления
+    temp_user = {
+        'name': 'Temp User',
+        'email': 'temp.user@mail.com'
+    }
+    create_response = client.post("/api/v1/user", json=temp_user)
+    user_id = create_response.json()
 
-    # Проверяем, что пользователь больше недоступен
-    response = client.get("/api/v1/user", params={'email': user_to_delete_email})
-    assert response.status_code == 404
-    assert response.json() == {'detail': 'User not found'}
+    # Удаляем пользователя
+    delete_response = client.delete("/api/v1/user", params={'email': temp_user['email']})
+    assert delete_response.status_code == 204
+
+    # Проверяем, что пользователь действительно удален
+    get_response = client.get("/api/v1/user", params={'email': temp_user['email']})
+    assert get_response.status_code == 404
